@@ -204,6 +204,48 @@
     color:var(--paper);padding:10px 26px;border-radius:3px;cursor:pointer;
     font-family:inherit;font-size:14px;
   }
+
+  /* ===== 유형 도감 ===== */
+  .dex{
+    border:2px solid var(--ink);border-radius:4px;background:#FAF5E6;
+    padding:13px 15px;margin-bottom:10px;font-size:14px;line-height:1.7;
+    word-break:keep-all;
+  }
+  .dex b{font-family:'Do Hyeon',sans-serif;font-size:17px;}
+  .dex .dtag{color:var(--field);font-size:12.5px;margin-left:6px;}
+
+  /* ===== 토론 모드 ===== */
+  .tk-step{
+    font-family:'Do Hyeon',sans-serif;font-size:15px;letter-spacing:.25em;
+    color:var(--flag);margin-bottom:14px;
+  }
+  .tk-title{
+    font-family:'Do Hyeon',sans-serif;font-size:min(9vw,44px);
+    color:var(--hay);line-height:1.3;word-break:keep-all;
+  }
+  .tk-lead{
+    font-size:min(4.8vw,19px);line-height:1.8;margin-top:18px;word-break:keep-all;
+  }
+  .tk-subs{
+    margin-top:24px;text-align:left;
+    background:rgba(242,232,210,.07);border:1px solid rgba(242,232,210,.35);
+    border-radius:6px;padding:16px 18px;
+  }
+  .tk-subs p{
+    font-size:min(4.2vw,16.5px);line-height:1.75;word-break:keep-all;
+    padding-left:18px;position:relative;margin-bottom:10px;
+  }
+  .tk-subs p:last-child{margin-bottom:0;}
+  .tk-subs p::before{content:"🌾";position:absolute;left:0;top:0;font-size:12px;}
+  .tk-nav{display:flex;gap:10px;margin-top:28px;}
+  .tk-nav button{
+    flex:1;cursor:pointer;font-family:'Do Hyeon',sans-serif;font-size:16px;
+    padding:13px;border-radius:3px;
+    background:transparent;color:var(--paper);
+    border:1.5px solid rgba(242,232,210,.5);
+  }
+  .tk-nav button.primary{background:var(--flag);border-color:var(--flag);}
+  .tk-nav button:disabled{opacity:.25;cursor:default;}
   @media (prefers-reduced-motion: reduce){
     *{animation:none !important;transition:none !important;}
   }
@@ -249,6 +291,10 @@
     <h1>사회자 화면</h1>
     <div class="rule"><span>참가자 판정 결과</span></div>
     <div id="personList"><div class="empty">불러오는 중…</div></div>
+    <div class="rule" style="margin-top:28px;"><span>토론 진행</span></div>
+    <button class="btn" onclick="startTalk()">💬 토론 모드 시작</button>
+    <div class="rule" style="margin-top:28px;"><span>유형 도감 · 전체 6종</span></div>
+    <div id="typeDex"></div>
     <button class="btn ghost" onclick="location.reload()" style="margin-top:16px;">처음으로</button>
   </section>
 </div>
@@ -442,8 +488,78 @@ async function openAdmin(){
   if(pw===null) return;
   if(pw!==ADMIN_PASS){ alert("비밀번호가 다릅니다."); return; }
   show("adminScreen");
+  renderDex();
   loadResults();
 }
+function renderDex(){
+  document.getElementById("typeDex").innerHTML =
+    Object.values(TYPES).map(t=>`
+      <div class="dex">
+        ${t.emoji} <b>${t.name}</b><span class="dtag">${t.tag}</span><br>
+        ${t.desc}
+      </div>`).join("");
+}
+
+/* =========================================================
+   토론 모드 — 주제를 순서대로 넘기며 진행
+   ========================================================= */
+const TOPICS = [
+  { title:"나는 어떤 동물일까?",
+    lead:"워밍업. 한 명씩 \"이 선생님은 어떤 동물일까?\" 다 같이 추측한 뒤, 공개 모드로 결과를 확인합니다.",
+    subs:["결과가 나와 맞나요? 본인이 생각하는 자신은 어떤 동물에 가까운가요?",
+          "실제 학교 생활에서 '아, 나 지금 복서 같다 / 벤자민 같다' 싶었던 순간이 있다면?"] },
+  { title:"가장 마음에 남은 장면",
+    lead:"책에서 가장 마음에 남은 장면이나 문장 하나씩 꺼내 봅시다.",
+    subs:["왜 하필 그 장면이었을까요?",
+          "읽으면서 가장 화가 났던 순간과 가장 서글펐던 순간은 언제였나요?"] },
+  { title:"복서의 죽음 — 성실함은 왜 배신당했나",
+    lead:"평생 \"내가 더 열심히 일하겠다\"던 복서의 마지막은 도축장행 마차였습니다.",
+    subs:["복서의 태도는 미덕일까요, 비극의 원인일까요?",
+          "교직에서 '복서처럼 일하다 소모되는' 모습, 본 적 있거나 겪은 적 있나요?",
+          "복서를 구할 수 있었던 순간이 있다면 언제였을까요?"] },
+  { title:"스퀼러의 언어 — 말이 현실을 바꿀 때",
+    lead:"스퀼러는 검은 것도 희다고 믿게 만듭니다. 숫자를 읊으며 \"존스 시절보다 풍족하다\"고 증명하기도 하죠.",
+    subs:["학교나 사회에서 스퀼러식 화법을 본 적 있나요?",
+          "동물들은 자기 기억보다 스퀼러의 말을 믿게 됩니다. 왜 그랬을까요?",
+          "교사의 말도 교실에서 그만큼 힘이 셉니다. 우리는 그 힘을 어떻게 쓰고 있나요?"] },
+  { title:"7계명의 변질 — 규칙은 어떻게 무너지는가",
+    lead:"\"이유 없이는\", \"시트를 깔고\", \"지나치게\" — 계명은 한 번에 무너지지 않고 조금씩 수정됐습니다.",
+    subs:["동물들은 왜 그 작은 수정들을 막지 못했을까요?",
+          "모든 비극의 시작점을 하나 고른다면? (우유와 사과? 개 아홉 마리? 회의 폐지?)",
+          "학급 규칙을 운영하는 우리에게 주는 시사점이 있다면?"] },
+  { title:"벤자민 문제 — 침묵은 죄인가",
+    lead:"벤자민은 모든 것을 알고 있었지만 침묵했고, 복서가 끌려가는 순간에야 처음으로 소리쳤습니다.",
+    subs:["다 알면서 침묵하는 것은 죄일까요?",
+          "벤자민은 왜 평소엔 말하지 않았을까요? 냉소일까요, 생존 전략일까요?",
+          "우리 각자의 '벤자민의 순간'이 있다면?"] },
+  { title:"마무리 — 교실로 가져간다면",
+    lead:"이 책은 우화라서 아이들도 읽을 수 있지만, 어른이 되어 읽으면 전혀 다른 책이 됩니다.",
+    subs:["초등학생에게 가르친다면 몇 학년, 어떤 방식이 좋을까요?",
+          "오늘 모임에서 각자 가져가는 한 문장은?"] }
+];
+let talkIdx=0;
+function startTalk(){ talkIdx=0; renderTalk(); }
+function renderTalk(){
+  const ov=document.getElementById("revealOverlay");
+  ov.classList.remove("hidden");
+  ov.onclick=null;
+  const t=TOPICS[talkIdx];
+  const isLast = talkIdx===TOPICS.length-1;
+  ov.innerHTML=`<div class="stage">
+      <p class="tk-step">토론 주제 ${talkIdx+1} / ${TOPICS.length}</p>
+      <p class="tk-title">${t.title}</p>
+      <p class="tk-lead">${t.lead}</p>
+      <div class="tk-subs">${t.subs.map(s=>`<p>${s}</p>`).join("")}</div>
+      <div class="tk-nav">
+        <button onclick="talkPrev()" ${talkIdx===0?'disabled':''}>← 이전 주제</button>
+        <button class="primary" onclick="${isLast?'closeReveal()':'talkNext()'}">${isLast?'토론 마치기':'다음 주제 →'}</button>
+      </div>
+      <button class="rv-close" onclick="closeReveal()">닫기</button>
+    </div>`;
+  ov.scrollTop=0;
+}
+function talkPrev(){ if(talkIdx>0){ talkIdx--; renderTalk(); } }
+function talkNext(){ if(talkIdx<TOPICS.length-1){ talkIdx++; renderTalk(); } }
 async function loadResults(){
   const list=document.getElementById("personList");
   try{
